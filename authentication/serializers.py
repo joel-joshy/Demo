@@ -3,6 +3,7 @@ from .models import User
 from django.contrib import auth
 from rest_framework.exceptions import AuthenticationFailed
 
+
 class RegisterSerializer(serializers.ModelSerializer):
 
     password = serializers.CharField(max_length=68, min_length=6, write_only=True)
@@ -35,14 +36,17 @@ class EmailVerificationSerializer(serializers.ModelSerializer):
 class LoginSerializer(serializers.ModelSerializer):
 
     email = serializers.EmailField(max_length=255)
-    password = serializers.CharField(max_length=68,min_length=6)
+    password = serializers.CharField(max_length=68, min_length=6,write_only=True)
+    username = serializers.CharField(min_length=3,read_only=True)
+    tokens = serializers.CharField(read_only=True)
+
     class Meta:
         model = User
-        fields = ['email','password']
+        fields = ['email','password','username','tokens']
 
-    def validated(self, attrs):
-        email = attrs.get('email','')
-        password = attrs.get('password','')
+    def validate(self, attrs):
+        email = attrs.get('email', '')
+        password = attrs.get('password', '')
         user = auth.authenticate(email=email, password=password)
         if not user.is_active:
             raise AuthenticationFailed('Account disabled')
@@ -53,5 +57,6 @@ class LoginSerializer(serializers.ModelSerializer):
         return {
             'email': user.email,
             'username': user.username,
-            'tokens': user.tokens()
+            'tokens': user.tokens
         }
+        return super().validate(attrs)
